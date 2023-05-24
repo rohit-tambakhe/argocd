@@ -1,0 +1,10 @@
+namespace: demo
+
+ingress:
+  host: argocd-demo.example.com
+
+demo:
+  image: "registry.gitlab.com/risingstack-org/argocd-demo/demo-app-1:latest"
+  replicaCount: 2
+  env:
+    PORT: 3000

@@ -1,0 +1,89 @@
+---
+# Source: demo-app/templates/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+# Source: demo-app/templates/demo-app.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: demo
+  name: demo-app
+  namespace: "demo"
+spec:
+  ports:
+    - name: "api"
+      port: 3000
+      targetPort: 3000
+  selector:
+    app: demo
+---
+# Source: demo-app/templates/demo-app.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: demo
+  name: demo-app
+  namespace: "demo"
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      annotations:
+        service: demo-app-service
+      labels:
+        app: demo
+    spec:
+      containers:
+      - name: demo-app
+        env:
+        - name: PORT
+          value: "3000"
+        image: "registry.gitlab.com/risingstack-org/argocd-demo/demo-app-1:latest"
+        imagePullPolicy: Always
+        livenessProbe:
+          tcpSocket:
+            port: 3000
+          failureThreshold: 3
+          successThreshold: 1
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 2
+        readinessProbe:
+          tcpSocket:
+            port: 3000
+          failureThreshold: 3
+          successThreshold: 1
+          periodSeconds: 10
+          timeoutSeconds: 2
+      restartPolicy: Always
+---
+# Source: demo-app/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway
+  namespace: demo
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: argocd-demo.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: demo-app
+            port:
+              number: 3000
