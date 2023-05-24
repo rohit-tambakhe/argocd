@@ -1,1 +1,1 @@
-# ArgoDC
+# ArgoCD
